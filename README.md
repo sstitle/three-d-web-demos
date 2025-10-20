@@ -1,74 +1,73 @@
-# three-d-web-demos
+# React + TypeScript + Vite
 
-A Nix-based development environment with nickel and mask.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-<!-- mdformat-toc start --slug=github --no-anchors --maxlevel=6 --minlevel=1 -->
+Currently, two official plugins are available:
 
-- [three-d-web-demos](#project-name)
-  - [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Quick Start](#quick-start)
-    - [Available Tools](#available-tools)
-    - [Task Automation](#task-automation)
-    - [Code Formatting](#code-formatting)
-    - [Project Structure](#project-structure)
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-<!-- mdformat-toc end -->
+## React Compiler
 
-## Getting Started
+The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
 
-### Prerequisites
+## Expanding the ESLint configuration
 
-- [Nix](https://nixos.org/download.html) with flakes enabled
-- [direnv](https://direnv.net/) for automatic environment loading
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-### Quick Start
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-1. Enter the development shell:
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-   ```bash
-   nix develop
-   ```
-
-1. Or with direnv installed:
-
-   ```bash
-   direnv allow
-   ```
-
-### Available Tools
-
-This development environment includes:
-
-- **nickel**: Configuration language for writing maintainable configuration files
-- **mask**: Task runner for automating common development tasks
-- **treefmt**: Multi-language code formatter
-- **git**: Version control
-- **direnv/nix-direnv**: Automatic environment loading
-
-### Task Automation
-
-This project uses [mask](https://github.com/jacobdeichert/mask) for task automation. View available tasks:
-
-```bash
-mask --help
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
-### Code Formatting
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-Use the nix formatter which is managed by `treefmt.nix`:
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-```bash
-nix fmt
-```
-
-### Project Structure
-
-```
-.
-├── flake.nix          # Nix flake configuration
-├── treefmt.nix        # Formatter configuration
-├── maskfile.md        # Task definitions
-├── .envrc             # direnv configuration
-└── README.md          # This file
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
