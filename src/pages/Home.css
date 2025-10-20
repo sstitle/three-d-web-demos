@@ -1,0 +1,81 @@
+.home {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.home-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.home-header h1 {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.home-header p {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.demo-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 2rem;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.demo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: #667eea;
+}
+
+.demo-card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.demo-card p {
+  color: #666;
+  line-height: 1.6;
+}
+
+@media (prefers-color-scheme: dark) {
+  .demo-card {
+    background: #1a1a1a;
+    border-color: #333;
+  }
+
+  .demo-card:hover {
+    border-color: #667eea;
+  }
+
+  .demo-card h2 {
+    color: #fff;
+  }
+
+  .demo-card p {
+    color: #aaa;
+  }
+
+  .home-header p {
+    color: #aaa;
+  }
+}
