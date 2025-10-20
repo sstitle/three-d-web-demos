@@ -7,6 +7,10 @@ export default function ParticleSystem() {
   useEffect(() => {
     if (!containerRef.current) return;
 
+    const container = containerRef.current;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
     // Scene setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a0a);
@@ -14,7 +18,7 @@ export default function ParticleSystem() {
     // Camera setup
     const camera = new THREE.PerspectiveCamera(
       75,
-      window.innerWidth / window.innerHeight,
+      width / height,
       0.1,
       1000
     );
@@ -22,8 +26,8 @@ export default function ParticleSystem() {
 
     // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    containerRef.current.appendChild(renderer.domElement);
+    renderer.setSize(width, height);
+    container.appendChild(renderer.domElement);
 
     // Create particles
     const particleCount = 5000;
@@ -80,23 +84,27 @@ export default function ParticleSystem() {
     };
     animate();
 
-    // Handle window resize
-    const handleResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    };
-    window.addEventListener('resize', handleResize);
+    // Handle container resize using ResizeObserver
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const newWidth = entry.contentRect.width;
+        const newHeight = entry.contentRect.height;
+        camera.aspect = newWidth / newHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(newWidth, newHeight);
+      }
+    });
+    resizeObserver.observe(container);
 
     // Cleanup
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       window.removeEventListener('mousemove', handleMouseMove);
       cancelAnimationFrame(animationId);
       renderer.dispose();
       geometry.dispose();
       material.dispose();
-      containerRef.current?.removeChild(renderer.domElement);
+      container.removeChild(renderer.domElement);
     };
   }, []);
 
