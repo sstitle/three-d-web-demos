@@ -2,6 +2,13 @@
   width: 100vw;
   height: 100vh;
   display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.demo-content {
+  flex: 1;
+  display: flex;
   flex-direction: column;
   overflow: hidden;
 }
@@ -9,10 +16,38 @@
 .demo-nav {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
   padding: 1rem 2rem;
   background: rgba(0, 0, 0, 0.05);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0.5rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.menu-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
 }
 
 .demo-nav h2 {
@@ -25,6 +60,7 @@
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s ease;
+  white-space: nowrap;
 }
 
 .back-link:hover {
@@ -63,6 +99,15 @@
   .demo-nav {
     background: rgba(255, 255, 255, 0.05);
     border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .menu-btn {
+    color: #aaa;
+  }
+
+  .menu-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
   }
 
   .demo-loading {
