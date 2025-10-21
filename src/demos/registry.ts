@@ -2,6 +2,12 @@ import { DemoInfo } from '../types/demo';
 
 export const demoRegistry: DemoInfo[] = [
   {
+    id: 'ascii-effect',
+    title: 'ASCII Effect',
+    description: 'Real-time 3D scene rendered as ASCII art characters',
+    component: () => import('./AsciiEffect'),
+  },
+  {
     id: 'keyboard-typing',
     title: 'Keyboard Typing',
     description: 'Type on your keyboard to see large 3D letters appear',
