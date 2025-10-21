@@ -1,8 +1,13 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { useDebugScene } from '../hooks/useDebugScene';
+import { createIsometricCamera } from '../utils/threeHelpers';
+import DebugOverlay, { DebugText, DebugButton } from '../components/DebugOverlay';
 
 export default function ParticleSystem() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const { debugEnabled, toggleDebug } = useDebugScene(sceneRef.current);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -14,15 +19,10 @@ export default function ParticleSystem() {
     // Scene setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a0a);
+    sceneRef.current = scene;
 
-    // Camera setup
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      width / height,
-      0.1,
-      1000
-    );
-    camera.position.z = 50;
+    // Camera - Isometric view with Z-up
+    const camera = createIsometricCamera(width, height, 60);
 
     // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -74,11 +74,11 @@ export default function ParticleSystem() {
       animationId = requestAnimationFrame(animate);
 
       particles.rotation.x += 0.001;
-      particles.rotation.y += 0.002;
+      particles.rotation.z += 0.002;
 
       // Mouse interaction effect
       particles.rotation.x += mouse.y * 0.01;
-      particles.rotation.y += mouse.x * 0.01;
+      particles.rotation.z += mouse.x * 0.01;
 
       renderer.render(scene, camera);
     };
@@ -105,8 +105,20 @@ export default function ParticleSystem() {
       geometry.dispose();
       material.dispose();
       container.removeChild(renderer.domElement);
+      sceneRef.current = null;
     };
   }, []);
 
-  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      <DebugOverlay>
+        <div>Particle System</div>
+        <DebugText secondary>Move mouse to rotate • 5000 particles</DebugText>
+        <DebugButton onClick={toggleDebug} active={debugEnabled}>
+          {debugEnabled ? "Hide Debug" : "Show Debug"}
+        </DebugButton>
+      </DebugOverlay>
+    </div>
+  );
 }

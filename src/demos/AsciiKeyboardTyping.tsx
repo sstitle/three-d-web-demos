@@ -2,13 +2,14 @@ import { useEffect, useState, useRef } from "react";
 import * as THREE from "three";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
+import { AsciiEffect } from "three/examples/jsm/effects/AsciiEffect.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { useKeyboardInput } from "../hooks/useKeyboardInput";
 import { useDebugScene } from "../hooks/useDebugScene";
-import { setupLighting, createIsometricCamera } from "../utils/threeHelpers";
+import { createIsometricCamera } from "../utils/threeHelpers";
 import DebugOverlay, { DebugText, DebugButton } from "../components/DebugOverlay";
 
-export default function KeyboardTyping() {
+export default function AsciiKeyboardTyping() {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const { currentChar } = useKeyboardInput();
@@ -47,13 +48,29 @@ export default function KeyboardTyping() {
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(width, height);
-    container.appendChild(renderer.domElement);
 
-    // Lights
-    setupLighting(scene, "standard");
+    // ASCII Effect - use current character as primary character in shader
+    const asciiChars = currentChar + " .:-+*=%@#";
+    const effect = new AsciiEffect(renderer, asciiChars, { invert: true });
+    effect.setSize(width, height);
+    effect.domElement.style.color = "white";
+    effect.domElement.style.backgroundColor = "black";
+    container.appendChild(effect.domElement);
+
+    // Lights (adjusted for Z-up)
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    dirLight.position.set(0, 1, 1).normalize();
+    scene.add(dirLight);
+
+    const pointLight = new THREE.PointLight(0xffffff, 4.5);
+    pointLight.position.set(0, 90, 100);
+    scene.add(pointLight);
+
+    const ambientLight = new THREE.AmbientLight(0x404040, 2);
+    scene.add(ambientLight);
 
     // Controls
-    const controls = new OrbitControls(camera, renderer.domElement);
+    const controls = new OrbitControls(camera, effect.domElement);
     controls.enableDamping = true;
 
     // Create text mesh
@@ -126,9 +143,10 @@ export default function KeyboardTyping() {
         textMesh.rotation.x = Math.PI / 2 + Math.sin(Date.now() * 0.001) * 0.1;
       }
 
-      renderer.render(scene, camera);
+      effect.render(scene, camera);
     };
     animate();
+
     // Resize observer
     const resizeObserver = new ResizeObserver(() => {
       const newWidth = container.clientWidth;
@@ -136,6 +154,7 @@ export default function KeyboardTyping() {
       camera.aspect = newWidth / newHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(newWidth, newHeight);
+      effect.setSize(newWidth, newHeight);
     });
     resizeObserver.observe(container);
 
@@ -147,7 +166,7 @@ export default function KeyboardTyping() {
       renderer.dispose();
       scene.remove(textMesh);
       textMesh.geometry.dispose();
-      container.removeChild(renderer.domElement);
+      container.removeChild(effect.domElement);
       sceneRef.current = null;
     };
   }, [fontLoaded, currentChar]);

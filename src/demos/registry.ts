@@ -1,4 +1,4 @@
-import { DemoInfo } from '../types/demo';
+import type { DemoInfo } from '../types/demo';
 
 export const demoRegistry: DemoInfo[] = [
   {
@@ -30,6 +30,12 @@ export const demoRegistry: DemoInfo[] = [
     title: 'Particle System',
     description: 'Interactive particle system with mouse controls',
     component: () => import('./ParticleSystem'),
+  },
+  {
+    id: 'ascii-keyboard-typing',
+    title: 'ASCII Keyboard Typing',
+    description: 'Type letters rendered as 3D text with ASCII effect and debug overlay',
+    component: () => import('./AsciiKeyboardTyping'),
   },
   // Add more demos here as you create them
 ];

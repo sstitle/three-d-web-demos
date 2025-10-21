@@ -1,8 +1,13 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { useDebugScene } from '../hooks/useDebugScene';
+import { createIsometricCamera } from '../utils/threeHelpers';
+import DebugOverlay, { DebugText, DebugButton } from '../components/DebugOverlay';
 
 export default function RotatingCube() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const { debugEnabled, toggleDebug } = useDebugScene(sceneRef.current);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -14,15 +19,10 @@ export default function RotatingCube() {
     // Scene setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
+    sceneRef.current = scene;
 
-    // Camera setup
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      width / height,
-      0.1,
-      1000
-    );
-    camera.position.z = 5;
+    // Camera - Isometric view with Z-up
+    const camera = createIsometricCamera(width, height, 6);
 
     // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -49,8 +49,9 @@ export default function RotatingCube() {
     const animate = () => {
       animationId = requestAnimationFrame(animate);
 
+      // Rotate around multiple axes for visual interest
       cube.rotation.x += 0.01;
-      cube.rotation.y += 0.01;
+      cube.rotation.z += 0.01;
 
       renderer.render(scene, camera);
     };
@@ -77,8 +78,20 @@ export default function RotatingCube() {
       material.dispose();
       edgeMaterial.dispose();
       container.removeChild(renderer.domElement);
+      sceneRef.current = null;
     };
   }, []);
 
-  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      <DebugOverlay>
+        <div>Rotating Cube</div>
+        <DebugText secondary>Basic Three.js setup</DebugText>
+        <DebugButton onClick={toggleDebug} active={debugEnabled}>
+          {debugEnabled ? "Hide Debug" : "Show Debug"}
+        </DebugButton>
+      </DebugOverlay>
+    </div>
+  );
 }
