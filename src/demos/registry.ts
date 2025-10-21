@@ -61,5 +61,11 @@ export const demoRegistry: DemoInfo[] = [
     description: 'Real-time raymarched signed distance fields with CSG operations',
     component: () => import('./RaymarchedSDF'),
   },
+  {
+    id: 'predators-and-prey',
+    title: 'Predators and Prey',
+    description: 'Agent-based simulation where predators hunt prey with emergent behavior',
+    component: () => import('./PredatorsAndPrey'),
+  },
   // Add more demos here as you create them
 ];
