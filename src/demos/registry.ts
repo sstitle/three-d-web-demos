@@ -2,6 +2,12 @@ import { DemoInfo } from '../types/demo';
 
 export const demoRegistry: DemoInfo[] = [
   {
+    id: 'keyboard-typing',
+    title: 'Keyboard Typing',
+    description: 'Type on your keyboard to see large 3D letters appear',
+    component: () => import('./KeyboardTyping'),
+  },
+  {
     id: 'debug-scene',
     title: 'Debug Scene',
     description: 'Isometric view showing XYZ coordinate axes with RGB colors',
