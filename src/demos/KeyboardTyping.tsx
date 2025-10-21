@@ -1,12 +1,12 @@
-import { useEffect, useState, useRef } from 'react';
-import * as THREE from 'three';
-import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
-import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { useEffect, useState, useRef } from "react";
+import * as THREE from "three";
+import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 export default function KeyboardTyping() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [currentChar, setCurrentChar] = useState('A');
+  const [currentChar, setCurrentChar] = useState("A");
   const [fontLoaded, setFontLoaded] = useState(false);
   const fontRef = useRef<any>(null);
 
@@ -14,20 +14,17 @@ export default function KeyboardTyping() {
   useEffect(() => {
     const loader = new FontLoader();
     loader.load(
-      'https://threejs.org/examples/fonts/helvetiker_bold.typeface.json',
+      "https://threejs.org/examples/fonts/helvetiker_bold.typeface.json",
       (font) => {
         fontRef.current = font;
         setFontLoaded(true);
-        console.log('Font loaded!');
-      }
+      },
     );
   }, []);
 
   // Main Three.js setup
   useEffect(() => {
     if (!containerRef.current || !fontRef.current) return;
-
-    console.log('Starting Three.js setup');
 
     const container = containerRef.current;
     const width = container.clientWidth;
@@ -82,12 +79,16 @@ export default function KeyboardTyping() {
       if (textGeometry.boundingBox) {
         const centerOffset = new THREE.Vector3();
         textGeometry.boundingBox.getCenter(centerOffset);
-        textGeometry.translate(-centerOffset.x, -centerOffset.y, -centerOffset.z);
+        textGeometry.translate(
+          -centerOffset.x,
+          -centerOffset.y,
+          -centerOffset.z,
+        );
       }
 
       const materials = [
         new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true }),
-        new THREE.MeshPhongMaterial({ color: 0x667eea })
+        new THREE.MeshPhongMaterial({ color: 0x667eea }),
       ];
 
       return new THREE.Mesh(textGeometry, materials);
@@ -96,21 +97,19 @@ export default function KeyboardTyping() {
     // Initial text
     let textMesh = createText(currentChar);
     scene.add(textMesh);
-    console.log('Initial text added');
 
     // Handle key presses
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.metaKey || event.altKey) return;
 
       let char = event.key;
-      if (char === ' ') {
-        char = '␣';
+      if (char === " ") {
+        char = "␣";
       } else if (char.length > 1) {
         return;
       }
 
       char = char.toUpperCase();
-      console.log('Key pressed:', char);
       setCurrentChar(char);
 
       // Remove old text
@@ -120,10 +119,9 @@ export default function KeyboardTyping() {
       // Add new text
       textMesh = createText(char);
       scene.add(textMesh);
-      console.log('Text updated to:', char);
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
 
     // Animation loop
     let animationId: number;
@@ -139,8 +137,6 @@ export default function KeyboardTyping() {
       renderer.render(scene, camera);
     };
     animate();
-    console.log('Animation started');
-
     // Resize observer
     const resizeObserver = new ResizeObserver(() => {
       const newWidth = container.clientWidth;
@@ -153,8 +149,7 @@ export default function KeyboardTyping() {
 
     // Cleanup
     return () => {
-      console.log('Cleaning up');
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
       cancelAnimationFrame(animationId);
       resizeObserver.disconnect();
       controls.dispose();
@@ -166,19 +161,19 @@ export default function KeyboardTyping() {
   }, [fontLoaded, currentChar]);
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
       <div
         style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          color: 'white',
-          fontFamily: 'monospace',
-          fontSize: '18px',
-          background: 'rgba(0, 0, 0, 0.7)',
-          padding: '10px 20px',
-          borderRadius: '8px',
+          position: "absolute",
+          top: "20px",
+          left: "20px",
+          color: "white",
+          fontFamily: "monospace",
+          fontSize: "18px",
+          background: "rgba(0, 0, 0, 0.7)",
+          padding: "10px 20px",
+          borderRadius: "8px",
         }}
       >
         {!fontLoaded ? (
@@ -186,7 +181,7 @@ export default function KeyboardTyping() {
         ) : (
           <div>
             <div>Type any key!</div>
-            <div style={{ marginTop: '10px', fontSize: '14px', opacity: 0.7 }}>
+            <div style={{ marginTop: "10px", fontSize: "14px", opacity: 0.7 }}>
               Current: {currentChar}
             </div>
           </div>
