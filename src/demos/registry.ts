@@ -55,5 +55,11 @@ export const demoRegistry: DemoInfo[] = [
     description: 'Interactive bitmap editor with WFC pattern generation',
     component: () => import('./WaveFunctionCollapse'),
   },
+  {
+    id: 'raymarched-sdf',
+    title: 'Raymarched SDF',
+    description: 'Real-time raymarched signed distance fields with CSG operations',
+    component: () => import('./RaymarchedSDF'),
+  },
   // Add more demos here as you create them
 ];
