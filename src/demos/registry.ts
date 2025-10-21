@@ -67,5 +67,11 @@ export const demoRegistry: DemoInfo[] = [
     description: 'Agent-based simulation where predators hunt prey with emergent behavior',
     component: () => import('./PredatorsAndPrey'),
   },
+  {
+    id: 'maze-generator',
+    title: 'Maze Generator',
+    description: 'Procedural maze generation using recursive backtracking with seed-based randomization',
+    component: () => import('./MazeGenerator'),
+  },
   // Add more demos here as you create them
 ];
