@@ -43,5 +43,11 @@ export const demoRegistry: DemoInfo[] = [
     description: 'Generate procedural textures with solid colors or XOR patterns',
     component: () => import('./TextureGenerator'),
   },
+  {
+    id: 'simplex-noise-visualizer',
+    title: 'Simplex Noise Visualizer',
+    description: 'Interactive 3D terrain generated with simplex noise and fractal brownian motion',
+    component: () => import('./SimplexNoiseVisualizer'),
+  },
   // Add more demos here as you create them
 ];
