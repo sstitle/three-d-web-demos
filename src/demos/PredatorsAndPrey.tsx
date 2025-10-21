@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import DebugOverlay, { DebugText, DebugButton } from '../components/DebugOverlay';
+import { createIsometricCamera } from '../utils/threeHelpers';
 
 interface Actor {
   position: THREE.Vector2;
@@ -21,6 +23,8 @@ interface Prey extends Actor {
 const WORLD_SIZE = 50;
 const PREDATOR_SIZE = 2;
 const PREY_SIZE = 1;
+const PREDATOR_HEIGHT = 1.5;
+const PREY_HEIGHT = 0.8;
 const PREDATOR_SPEED = 0.15;
 const PREY_SPEED = 0.08;
 const PREDATOR_TURN_RATE = 0.03;
@@ -32,7 +36,7 @@ const COLLISION_DISTANCE_PREY = PREY_SIZE;
 export default function PredatorsAndPrey() {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const predatorsRef = useRef<Predator[]>([]);
   const preyRef = useRef<Prey[]>([]);
@@ -55,19 +59,8 @@ export default function PredatorsAndPrey() {
     scene.background = new THREE.Color(0x1a1a2e);
     sceneRef.current = scene;
 
-    // Camera - Orthographic top-down view
-    const aspect = width / height;
-    const viewSize = WORLD_SIZE * 1.2;
-    const camera = new THREE.OrthographicCamera(
-      -viewSize * aspect / 2,
-      viewSize * aspect / 2,
-      viewSize / 2,
-      -viewSize / 2,
-      0.1,
-      100
-    );
-    camera.position.set(0, 0, 50);
-    camera.lookAt(0, 0, 0);
+    // Camera - Isometric view
+    const camera = createIsometricCamera(width, height, WORLD_SIZE * 1.2);
     cameraRef.current = camera;
 
     // Renderer
@@ -76,21 +69,77 @@ export default function PredatorsAndPrey() {
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Ground plane (reference)
-    const groundGeometry = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
-    const groundMaterial = new THREE.MeshBasicMaterial({
-      color: 0x0f1419,
-      side: THREE.DoubleSide,
+    // OrbitControls for camera movement
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 20;
+    controls.maxDistance = 150;
+    controls.maxPolarAngle = Math.PI / 2; // Don't go below ground
+    controls.target.set(0, 0, 0);
+
+    // Ground plane - thin box at z=0
+    const groundGeometry = new THREE.BoxGeometry(WORLD_SIZE, WORLD_SIZE, 0.2);
+    const groundMaterial = new THREE.MeshStandardMaterial({
+      color: 0x1a1a2e,
+      roughness: 0.8,
+      metalness: 0.2,
     });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.position.z = -0.1;
     scene.add(ground);
 
-    // World boundary
-    const boundaryGeometry = new THREE.EdgesGeometry(groundGeometry);
-    const boundaryMaterial = new THREE.LineBasicMaterial({ color: 0x333333 });
-    const boundary = new THREE.LineSegments(boundaryGeometry, boundaryMaterial);
-    boundary.position.z = 0.1;
-    scene.add(boundary);
+    // World boundary - vertical walls
+    const wallHeight = 2;
+    const wallThickness = 0.2;
+    const wallMaterial = new THREE.MeshStandardMaterial({
+      color: 0x2a2a3e,
+      roughness: 0.7,
+      metalness: 0.3,
+      transparent: true,
+      opacity: 0.6,
+    });
+
+    // Create four walls
+    const wallNorth = new THREE.Mesh(
+      new THREE.BoxGeometry(WORLD_SIZE, wallThickness, wallHeight),
+      wallMaterial
+    );
+    wallNorth.position.set(0, WORLD_SIZE / 2, wallHeight / 2);
+    scene.add(wallNorth);
+
+    const wallSouth = new THREE.Mesh(
+      new THREE.BoxGeometry(WORLD_SIZE, wallThickness, wallHeight),
+      wallMaterial
+    );
+    wallSouth.position.set(0, -WORLD_SIZE / 2, wallHeight / 2);
+    scene.add(wallSouth);
+
+    const wallEast = new THREE.Mesh(
+      new THREE.BoxGeometry(wallThickness, WORLD_SIZE, wallHeight),
+      wallMaterial
+    );
+    wallEast.position.set(WORLD_SIZE / 2, 0, wallHeight / 2);
+    scene.add(wallEast);
+
+    const wallWest = new THREE.Mesh(
+      new THREE.BoxGeometry(wallThickness, WORLD_SIZE, wallHeight),
+      wallMaterial
+    );
+    wallWest.position.set(-WORLD_SIZE / 2, 0, wallHeight / 2);
+    scene.add(wallWest);
+
+    // Add lighting for 3D depth
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+
+    const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight1.position.set(10, 10, 10);
+    scene.add(directionalLight1);
+
+    const directionalLight2 = new THREE.DirectionalLight(0x4444ff, 0.3);
+    directionalLight2.position.set(-10, -10, 5);
+    scene.add(directionalLight2);
 
     // Create initial actors
     initializeActors(scene);
@@ -103,6 +152,9 @@ export default function PredatorsAndPrey() {
         updateSimulation();
       }
 
+      // Update controls for damping
+      controls.update();
+
       renderer.render(scene, camera);
     };
     animate();
@@ -112,13 +164,9 @@ export default function PredatorsAndPrey() {
       const entry = entries[0];
       const newWidth = entry.contentRect.width;
       const newHeight = entry.contentRect.height;
-      const newAspect = newWidth / newHeight;
 
       if (cameraRef.current) {
-        cameraRef.current.left = -viewSize * newAspect / 2;
-        cameraRef.current.right = viewSize * newAspect / 2;
-        cameraRef.current.top = viewSize / 2;
-        cameraRef.current.bottom = -viewSize / 2;
+        cameraRef.current.aspect = newWidth / newHeight;
         cameraRef.current.updateProjectionMatrix();
       }
 
@@ -130,6 +178,7 @@ export default function PredatorsAndPrey() {
     return () => {
       cancelAnimationFrame(animationFrameRef.current);
       resizeObserver.disconnect();
+      controls.dispose();
 
       // Dispose all meshes
       predatorsRef.current.forEach(p => {
@@ -159,10 +208,17 @@ export default function PredatorsAndPrey() {
         });
       });
 
-      groundGeometry.dispose();
-      groundMaterial.dispose();
-      boundaryGeometry.dispose();
-      boundaryMaterial.dispose();
+      // Dispose ground and walls
+      scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          if (Array.isArray(object.material)) {
+            object.material.forEach(m => m.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      });
       renderer.dispose();
       if (container && renderer.domElement.parentNode === container) {
         container.removeChild(renderer.domElement);
@@ -235,41 +291,58 @@ export default function PredatorsAndPrey() {
       Math.sin(heading) * PREDATOR_SPEED
     );
 
-    // Create mesh - box with direction indicator
+    // Create 3D mesh - pyramid/wedge shape
     const group = new THREE.Group();
 
-    // Body (square)
-    const bodyGeometry = new THREE.PlaneGeometry(PREDATOR_SIZE, PREDATOR_SIZE);
-    const bodyMaterial = new THREE.MeshBasicMaterial({
+    // Body - tapered box (predator body)
+    const bodyGeometry = new THREE.BoxGeometry(PREDATOR_SIZE, PREDATOR_SIZE * 0.8, PREDATOR_HEIGHT);
+    const bodyMaterial = new THREE.MeshStandardMaterial({
       color: 0xff4444,
-      side: THREE.DoubleSide,
+      roughness: 0.5,
+      metalness: 0.3,
+      emissive: 0x440000,
+      emissiveIntensity: 0.2,
     });
     const bodyMesh = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    bodyMesh.position.z = PREDATOR_HEIGHT / 2;
     group.add(bodyMesh);
 
-    // Direction indicator (triangle pointing forward)
-    const directionGeometry = new THREE.BufferGeometry();
-    const directionVertices = new Float32Array([
-      PREDATOR_SIZE * 0.6, 0, 0.01,
-      PREDATOR_SIZE * 0.2, PREDATOR_SIZE * 0.3, 0.01,
-      PREDATOR_SIZE * 0.2, -PREDATOR_SIZE * 0.3, 0.01,
-    ]);
-    directionGeometry.setAttribute('position', new THREE.BufferAttribute(directionVertices, 3));
-    const directionMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffaaaa,
-      side: THREE.DoubleSide,
+    // Head - cone pointing forward
+    const headGeometry = new THREE.ConeGeometry(PREDATOR_SIZE * 0.4, PREDATOR_SIZE * 0.6, 4);
+    const headMaterial = new THREE.MeshStandardMaterial({
+      color: 0xff6666,
+      roughness: 0.4,
+      metalness: 0.4,
     });
-    const directionMesh = new THREE.Mesh(directionGeometry, directionMaterial);
-    group.add(directionMesh);
+    const headMesh = new THREE.Mesh(headGeometry, headMaterial);
+    headMesh.position.set(PREDATOR_SIZE * 0.7, 0, PREDATOR_HEIGHT / 2);
+    headMesh.rotation.z = -Math.PI / 2;
+    group.add(headMesh);
 
-    // Collision box outline
+    // Eyes (small spheres)
+    const eyeGeometry = new THREE.SphereGeometry(0.15, 8, 8);
+    const eyeMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffff00,
+      emissive: 0xffff00,
+      emissiveIntensity: 0.8,
+    });
+
+    const eyeLeft = new THREE.Mesh(eyeGeometry, eyeMaterial);
+    eyeLeft.position.set(PREDATOR_SIZE * 0.4, PREDATOR_SIZE * 0.25, PREDATOR_HEIGHT * 0.8);
+    group.add(eyeLeft);
+
+    const eyeRight = new THREE.Mesh(eyeGeometry, eyeMaterial);
+    eyeRight.position.set(PREDATOR_SIZE * 0.4, -PREDATOR_SIZE * 0.25, PREDATOR_HEIGHT * 0.8);
+    group.add(eyeRight);
+
+    // Collision box outline (wireframe)
     const edgesGeometry = new THREE.EdgesGeometry(bodyGeometry);
-    const edgesMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
+    const edgesMaterial = new THREE.LineBasicMaterial({ color: 0xff8888, linewidth: 1 });
     const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
-    edges.position.z = 0.02;
+    edges.position.z = PREDATOR_HEIGHT / 2;
     group.add(edges);
 
-    group.position.set(position.x, position.y, 1);
+    group.position.set(position.x, position.y, 0);
     group.rotation.z = heading;
 
     return {
@@ -293,41 +366,61 @@ export default function PredatorsAndPrey() {
       Math.sin(heading) * PREY_SPEED
     );
 
-    // Create mesh - smaller box with direction indicator
+    // Create 3D mesh - rounded creature
     const group = new THREE.Group();
 
-    // Body (circle approximated with octagon)
-    const bodyGeometry = new THREE.CircleGeometry(PREY_SIZE / 2, 8);
-    const bodyMaterial = new THREE.MeshBasicMaterial({
+    // Body - rounded cylinder
+    const bodyGeometry = new THREE.CylinderGeometry(PREY_SIZE / 2, PREY_SIZE / 2, PREY_HEIGHT, 12);
+    const bodyMaterial = new THREE.MeshStandardMaterial({
       color: 0x44ff44,
-      side: THREE.DoubleSide,
+      roughness: 0.6,
+      metalness: 0.2,
+      emissive: 0x004400,
+      emissiveIntensity: 0.1,
     });
     const bodyMesh = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    bodyMesh.rotation.x = Math.PI / 2; // Rotate to align with movement
+    bodyMesh.position.z = PREY_HEIGHT / 2;
     group.add(bodyMesh);
 
-    // Direction indicator (small triangle)
-    const directionGeometry = new THREE.BufferGeometry();
-    const directionVertices = new Float32Array([
-      PREY_SIZE * 0.6, 0, 0.01,
-      PREY_SIZE * 0.2, PREY_SIZE * 0.2, 0.01,
-      PREY_SIZE * 0.2, -PREY_SIZE * 0.2, 0.01,
-    ]);
-    directionGeometry.setAttribute('position', new THREE.BufferAttribute(directionVertices, 3));
-    const directionMaterial = new THREE.MeshBasicMaterial({
-      color: 0xaaffaa,
-      side: THREE.DoubleSide,
+    // Head - small sphere at front
+    const headGeometry = new THREE.SphereGeometry(PREY_SIZE * 0.35, 12, 12);
+    const headMaterial = new THREE.MeshStandardMaterial({
+      color: 0x66ff66,
+      roughness: 0.5,
+      metalness: 0.3,
     });
-    const directionMesh = new THREE.Mesh(directionGeometry, directionMaterial);
-    group.add(directionMesh);
+    const headMesh = new THREE.Mesh(headGeometry, headMaterial);
+    headMesh.position.set(PREY_SIZE * 0.4, 0, PREY_HEIGHT / 2);
+    group.add(headMesh);
 
-    // Collision box outline
-    const edgesGeometry = new THREE.EdgesGeometry(bodyGeometry);
-    const edgesMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 1 });
-    const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
-    edges.position.z = 0.02;
-    group.add(edges);
+    // Eyes (tiny spheres)
+    const eyeGeometry = new THREE.SphereGeometry(0.08, 8, 8);
+    const eyeMaterial = new THREE.MeshStandardMaterial({
+      color: 0x000000,
+    });
 
-    group.position.set(position.x, position.y, 0.5);
+    const eyeLeft = new THREE.Mesh(eyeGeometry, eyeMaterial);
+    eyeLeft.position.set(PREY_SIZE * 0.5, PREY_SIZE * 0.15, PREY_HEIGHT * 0.7);
+    group.add(eyeLeft);
+
+    const eyeRight = new THREE.Mesh(eyeGeometry, eyeMaterial);
+    eyeRight.position.set(PREY_SIZE * 0.5, -PREY_SIZE * 0.15, PREY_HEIGHT * 0.7);
+    group.add(eyeRight);
+
+    // Tail - small cone at back
+    const tailGeometry = new THREE.ConeGeometry(PREY_SIZE * 0.15, PREY_SIZE * 0.4, 8);
+    const tailMaterial = new THREE.MeshStandardMaterial({
+      color: 0x33cc33,
+      roughness: 0.7,
+      metalness: 0.1,
+    });
+    const tailMesh = new THREE.Mesh(tailGeometry, tailMaterial);
+    tailMesh.position.set(-PREY_SIZE * 0.4, 0, PREY_HEIGHT / 2);
+    tailMesh.rotation.z = Math.PI / 2;
+    group.add(tailMesh);
+
+    group.position.set(position.x, position.y, 0);
     group.rotation.z = heading;
 
     return {
@@ -344,6 +437,7 @@ export default function PredatorsAndPrey() {
     const predators = predatorsRef.current;
     const allPrey = preyRef.current;
     const prey = allPrey.filter(p => p.alive);
+    const time = Date.now() * 0.001;
 
     // Update predators
     predators.forEach(predator => {
@@ -379,9 +473,13 @@ export default function PredatorsAndPrey() {
       // Wrap around world boundaries
       wrapPosition(predator.position);
 
-      // Update mesh
-      predator.mesh.position.set(predator.position.x, predator.position.y, 1);
+      // Update mesh with subtle bobbing animation
+      const bobAmount = Math.sin(time * 3 + predator.position.x) * 0.1;
+      predator.mesh.position.set(predator.position.x, predator.position.y, bobAmount);
       predator.mesh.rotation.z = predator.heading;
+
+      // Subtle tilt based on velocity
+      predator.mesh.rotation.x = predator.velocity.length() * 0.05;
     });
 
     // Update prey
@@ -437,8 +535,20 @@ export default function PredatorsAndPrey() {
 
       // Update mesh if still alive
       if (preyActor.alive) {
-        preyActor.mesh.position.set(preyActor.position.x, preyActor.position.y, 0.5);
+        // Faster bobbing for prey (looks like hopping/scurrying)
+        const bobAmount = Math.sin(time * 5 + preyActor.position.y) * 0.08;
+        preyActor.mesh.position.set(preyActor.position.x, preyActor.position.y, bobAmount);
         preyActor.mesh.rotation.z = preyActor.heading;
+
+        // Wiggle effect when fleeing (check if near predator)
+        const nearPredator = predators.some(p =>
+          preyActor.position.distanceTo(p.position) < DETECTION_RANGE * 0.5
+        );
+        if (nearPredator) {
+          preyActor.mesh.rotation.x = Math.sin(time * 8) * 0.1;
+        } else {
+          preyActor.mesh.rotation.x = 0;
+        }
       }
     });
 
@@ -520,6 +630,9 @@ export default function PredatorsAndPrey() {
           Predators: fast, poor turning
           <br />
           Prey: slow, agile
+          <br />
+          <br />
+          🎮 Drag to orbit • Scroll to zoom
         </div>
       </DebugOverlay>
     </div>
