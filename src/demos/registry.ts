@@ -49,5 +49,11 @@ export const demoRegistry: DemoInfo[] = [
     description: 'Interactive 3D terrain generated with simplex noise and fractal brownian motion',
     component: () => import('./SimplexNoiseVisualizer'),
   },
+  {
+    id: 'wave-function-collapse',
+    title: 'Wave Function Collapse',
+    description: 'Interactive bitmap editor with WFC pattern generation',
+    component: () => import('./WaveFunctionCollapse'),
+  },
   // Add more demos here as you create them
 ];
