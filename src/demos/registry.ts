@@ -37,5 +37,11 @@ export const demoRegistry: DemoInfo[] = [
     description: 'Type letters rendered as 3D text with ASCII effect and debug overlay',
     component: () => import('./AsciiKeyboardTyping'),
   },
+  {
+    id: 'texture-generator',
+    title: 'Texture Generator',
+    description: 'Generate procedural textures with solid colors or XOR patterns',
+    component: () => import('./TextureGenerator'),
+  },
   // Add more demos here as you create them
 ];
